@@ -1,0 +1,6 @@
+{
+  "name": "Node.js Getting Started",
+  "description": "Playground app to play with Heroku and node in a live / public environment. Longer term aim to add mongo, authentication, api and isomorphic react",
+  "repository": "https://github.com/muthahubbard/first-node-express-heroku-app",
+  "keywords": ["node", "express", "static"]
+}
