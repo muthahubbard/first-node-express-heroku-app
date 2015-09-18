@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node --harmony index.js"
   },
-   "dependencies": {
+  "dependencies": {
     "ejs": "2.3.3",
-    "express": "4.13.3"
+    "express": "4.13.3",
+    "mongoose": "^4.1.7"
   },
   "engines": {
     "node": "0.12.7"
