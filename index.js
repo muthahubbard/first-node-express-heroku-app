@@ -6,8 +6,16 @@ const app = express();
 
 app.set('port', (process.env.PORT || 5000));
 
+var uristring = process.env.MONGOLAB_URI;
 
-//mongoose.connect(process.env.MONGOLAB_URL);
+ mongoose.connect(uristring, function (err, res) {
+    if (err) {
+      console.log ('ERROR connecting : ' + uristring + '. ' + err);
+    } else {
+      console.log ('Succeeded connected to: ');
+      }
+    });
+
 
 // views is directory for all template files
 app.set('views', __dirname + '/views');
