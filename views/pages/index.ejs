@@ -2,10 +2,17 @@
 <html>
 <head>
   <title>Hello Express</title>
+  <script src="/jspm_packages/system.js"></script>
+  <script src="/root/config.js"></script>
+  <script>
+  System.import('client/entry');
+  </script>
 </head>
 <body>
   
   <h1>Hello Express</h1>
+
+  <div id="app"><%= content %></div>
 
 </body>
 </html>
