@@ -1,6 +1,6 @@
 
 var env = require('node-env-file');
-var mongoose = require('mongoose');
+import mongoose from 'mongoose';
 var express = require('express');
 var bodyParser = require('body-parser');
 var jwt = require('jsonwebtoken');
@@ -10,8 +10,9 @@ var User = require('./server/models/user');
 
 const app = express();
 
+// need to wrap this for heroku only used localy
 try {
-env(__dirname + '/.env');
+  env(__dirname + '/.env');
 } catch (err) {
 
 }
