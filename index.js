@@ -1,7 +1,7 @@
 
 var env = require('node-env-file');
-import mongoose from 'mongoose';
-import express from 'express';
+var mongoose = require('mongoose');
+var express = require('express');
 var bodyParser = require('body-parser');
 var jwt = require('jsonwebtoken');
 var jwtAuth = require('express-jwt');
