@@ -10,7 +10,11 @@ var User = require('./server/models/user');
 
 const app = express();
 
-//env(__dirname + '/.env');
+try {
+env(__dirname + '/.env');
+} catch (err) {
+
+}
 
 app.set('port', (process.env.PORT || 5000));
 
