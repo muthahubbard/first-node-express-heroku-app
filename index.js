@@ -1,5 +1,5 @@
 
-//var env = require('node-env-file');
+var env = require('node-env-file');
 var mongoose = require('mongoose');
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -10,7 +10,7 @@ var User = require('./server/models/user');
 
 const app = express();
 
-//env(__dirname + '/.env');
+env(__dirname + '/.env');
 
 app.set('port', (process.env.PORT || 5000));
 
