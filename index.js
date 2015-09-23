@@ -8,6 +8,16 @@ var jwtAuth = require('express-jwt');
 var Person = require('./models/person');
 var User = require('./server/models/user');
 
+
+import React from 'react';
+
+import { RoutingContext, match } from 'react-router';
+import createLocation from 'history/lib/createLocation';
+
+
+import routes from './shared/routes';
+import ReactApp from './shared/main';
+
 const app = express();
 
 // need to wrap this for heroku only used localy
@@ -37,15 +47,81 @@ var uristring = process.env.MONGOLAB_URI;
 
 // views is directory for all template files
 
-app.set('views', __dirname + '/views');
-app.use('/root', express.static(__dirname + '/'));
-app.use('/jspm_packages', express.static(__dirname + '/jspm_packages'));
-app.use('/shared', express.static(__dirname + '/shared/'));
-app.use('/client', express.static(__dirname + '/client/'));
-app.set('view engine', 'ejs');
+//app.set('views', __dirname + '/views');
+//app.use('/root', express.static(__dirname + '/'));
+//app.use('/jspm_packages', express.static(__dirname + '/jspm_packages'));
+//app.use('/shared', express.static(__dirname + '/shared/'));
+//app.use('/client', express.static(__dirname + '/client/'));
+//app.set('view engine', 'ejs');
+
+app.get('/', (req, res) => {
+  
+  const location = createLocation(req.url);
+  
+  match( {routes, location}, (err, redirectLocation, renderProps) => {
+
+    if (err) { 
+      console.error(err);
+      return res.status(500).end('Internal server error');
+    }
+    if (!renderProps) return res.status(404).end('Not found.');
+    
+    const InitialComponent = (
+      <RoutingContext {...renderProps} />
+    );
+    const componentHTML = React.renderToString(InitialComponent);
+
+    const HTML = `
+    <!Doctype html>
+    <html>
+      <head>
+        <title>Isomorphic React</title>
+      </head>
+      <body>
+        <h1>Hello Isomorphic React</h1>
+        <div id="app">${componentHTML}</app>
+      </body>
+    </html>`;
+
+  res.end(HTML);
+
+  });
+
+  
+});
+
 
 app.get('/', function(request,response) {
-  response.render('pages/index', { content: 'This will be server react' });
+
+  
+  //let reactContent = React.renderToString(<ReactApp />);
+  //let reactContent = React.renderToString(<Router routes={routes} />);
+  
+  const location = createLocation(request.url);
+
+   var reactContent = 'boo';
+
+
+    reactContent = 'react will go here';
+
+  
+     match({ routes, location }, (err, redirectLocation, renderProps) => {
+    if (err) { 
+      console.error(err);
+      return res.status(500).end('Internal server error');
+    }
+
+    if (!renderProps) return res.status(404).end('Not found.');
+    
+    const InitialComponent = (
+      <RoutingContext {...renderProps} />
+    );
+    reactContent = React.renderToString(InitialComponent);
+
+  });
+  
+
+  //response.render('pages/index', { content: reactContent });
 });
 
 
@@ -61,10 +137,6 @@ apiRouter.use(function(request, response, next) {
     next();
 });
 
-apiRouter.get('/', function(request, response) {
-  
-
-});
 
 app.get('/protected',
     jwtAuth({secret: process.env.JWT_SECRET}),

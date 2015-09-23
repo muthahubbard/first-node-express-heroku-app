@@ -1,8 +1,9 @@
-import { Route } from 'react-router';
 import React from 'react';
+import { Route } from 'react-router';
 
-import App from './main';
+
+import ReactApp from './main';
 
 export default (
-  <Route name="app" handler={App} path="/" />
-)
+  <Route component={ReactApp} path="/" />
+);
