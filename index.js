@@ -2,6 +2,7 @@
 var env = require('node-env-file');
 import mongoose from 'mongoose';
 var express = require('express');
+var cors = require('cors');
 var bodyParser = require('body-parser');
 var jwt = require('jsonwebtoken');
 var jwtAuth = require('express-jwt');
@@ -10,15 +11,24 @@ var User = require('./server/models/user');
 
 
 import React from 'react';
-
+// redux
+import { createStore, combineReducers } from 'redux';
+import { Provider }                     from 'react-redux';
+import * as reducers                  from './shared/reducers/index';
+// routing
 import { RoutingContext, match } from 'react-router';
 import createLocation from 'history/lib/createLocation';
 
+import { applyMiddleware } from 'redux';
+import promiseMiddleware   from './shared/lib/promiseMiddleware';
+import fetchComponentData  from './shared/lib/fetchComponentData';
 
+// components
 import routes from './shared/routes';
 import ReactApp from './shared/main';
 
 const app = express();
+app.use(cors());
 
 // need to wrap this for heroku only used localy
 try {
@@ -26,6 +36,12 @@ try {
 } catch (err) {
 
 }
+
+// So the example quote unquote 'production mode' works
+import fs from 'fs';
+app.use('/bundle.js', function (req, res) {
+  return fs.createReadStream('./build/bundle.js').pipe(res);
+});
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -54,76 +70,6 @@ var uristring = process.env.MONGOLAB_URI;
 //app.use('/client', express.static(__dirname + '/client/'));
 //app.set('view engine', 'ejs');
 
-app.get('/', (req, res) => {
-  
-  const location = createLocation(req.url);
-  
-  match( {routes, location}, (err, redirectLocation, renderProps) => {
-
-    if (err) { 
-      console.error(err);
-      return res.status(500).end('Internal server error');
-    }
-    if (!renderProps) return res.status(404).end('Not found.');
-    
-    const InitialComponent = (
-      <RoutingContext {...renderProps} />
-    );
-    const componentHTML = React.renderToString(InitialComponent);
-
-    const HTML = `
-    <!Doctype html>
-    <html>
-      <head>
-        <title>Isomorphic React</title>
-      </head>
-      <body>
-        <h1>Hello Isomorphic React</h1>
-        <div id="app">${componentHTML}</app>
-      </body>
-    </html>`;
-
-  res.end(HTML);
-
-  });
-
-  
-});
-
-
-app.get('/', function(request,response) {
-
-  
-  //let reactContent = React.renderToString(<ReactApp />);
-  //let reactContent = React.renderToString(<Router routes={routes} />);
-  
-  const location = createLocation(request.url);
-
-   var reactContent = 'boo';
-
-
-    reactContent = 'react will go here';
-
-  
-     match({ routes, location }, (err, redirectLocation, renderProps) => {
-    if (err) { 
-      console.error(err);
-      return res.status(500).end('Internal server error');
-    }
-
-    if (!renderProps) return res.status(404).end('Not found.');
-    
-    const InitialComponent = (
-      <RoutingContext {...renderProps} />
-    );
-    reactContent = React.renderToString(InitialComponent);
-
-  });
-  
-
-  //response.render('pages/index', { content: reactContent });
-});
-
 
 
 
@@ -131,8 +77,7 @@ app.get('/', function(request,response) {
 var apiRouter = express.Router();
 
 apiRouter.use(function(request, response, next) {
-    console.log('api router doing something');
-    
+    console.log('api router doing something');  
 
     next();
 });
@@ -209,7 +154,7 @@ apiRouter.get('/admin/users', function(request, response) {
 });
 
 apiRouter.post('/authenticate', function(request, response) {
-  
+
   User.findOne({
     email: request.body.email
     }, function(err, user) {
@@ -220,27 +165,91 @@ apiRouter.post('/authenticate', function(request, response) {
         response.json({success: false, message: 'Authentication failed.'});
       } else if (user) {
         
-        if(user.password != request.body.password) {
-          response.json({ success: false, message: 'Authentication failed.'});
-        } else {
+        user.comparePassword(request.body.password, function(err, isMatch) {
+          if (err) throw err;
+                    
+          if(!isMatch) {
+            response.json({ success: false, message: 'Authentication failed.'});
+          } else {
+            
+            var token = jwt.sign(user, app.get('jwtSecret'), {
+              expiresInMinutes: 30
+            });
 
-          var token = jwt.sign(user, app.get('jwtSecret'), {
-            expiresInMinutes: 30
-          });
-
-          response.json({
-            success: true,
-            message: 'Have a token',
-            token: token
-          });
+            response.json({
+              success: true,
+              message: 'Have a token',
+              token: token
+            });
         
-        }
+          }
+        
+        });
     }
 
   });
 });
 
 app.use('/api', apiRouter);
+
+
+//app.get('/', (req, res) => {
+app.use((req, res) => {
+  
+  const location = createLocation(req.url);
+  const reducer = combineReducers(reducers);
+  const store = applyMiddleware(promiseMiddleware)(createStore)(reducer);
+
+
+  match( {routes, location}, (err, redirectLocation, renderProps) => {
+
+    if (err) { 
+      console.error(err);
+      return res.status(500).end('Internal server error');
+    }
+    if (!renderProps) return res.status(404).end('Not found.');
+     
+    function renderView() {
+
+    const InitialComponent = (
+      <Provider store={store}>
+      {() => 
+        <RoutingContext {...renderProps} />
+      }
+      </Provider>
+    );
+    
+    const initialState = store.getState();
+    const componentHTML = React.renderToString(InitialComponent);
+
+    const HTML = `
+    <!Doctype html>
+    <html>
+      <head>
+        <title>Isomorphic React</title>
+        <script type="application/javascript">
+          window.__INITIAL_STATE__ = ${JSON.stringify(initialState)};
+        </script>
+      </head>
+      <body>
+        <div id="app">${componentHTML}</app>
+        <script src="/bundle.js"></script>
+      </body>
+    </html>`;
+
+    return HTML;
+  }
+
+  fetchComponentData(store.dispatch, renderProps.components, renderProps.params)
+      .then(renderView)
+      .then(html => res.end(html))
+      .catch(err => res.end(err.message))
+
+  });
+
+});
+
+
 
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
